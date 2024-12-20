@@ -7,20 +7,22 @@
 
 #define LARGURA 10000
 #define ALTURA 10000
+#define NUMTHREADS 8
 
 
 int **matriz;
 int numPrimos = 0; 
-
+pthread_mutex_t qtdPrimosMutex;
+pthread_mutex_t macroblocoMutex;
 
 // add -lm if gcc
-
 
 int ehPrimo(int n);
 void mallocMatriz(int altura, int largura);
 void freeMatriz(int altura);
-void buscaSerial(int altura, int largura);
 
+void buscaSerial(int altura, int largura);
+void buscaParalela();
 
 int main(int argc, char *argv[]) {
     srand(time(NULL));
@@ -37,8 +39,21 @@ int main(int argc, char *argv[]) {
         timer = clock();
       
         if (opcao == 1) buscaSerial(ALTURA, LARGURA); 
-        else if (opcao == 2) printf("a");
-        
+        else if (opcao == 2) {
+            printf("\nInciando busca paralela com %d threads...\n", NUMTHREADS);
+            
+            pthread_t threads[NUMTHREADS];
+            pthread_mutex_init(&macroblocoMutex, NULL);
+            
+            int i;
+            for (i = 0; i < NUMTHREADS; i++) {
+                pthread_create(threads[i], NULL, buscaParalela());
+            }
+
+            
+            pthread_mutex_destroy(&macroblocoMutex);
+            pthread_mutex_destroy(&qtdPrimosMutex);
+        };
         timer = clock() - timer;
         printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
         printf("Quantidade de primos na matriz: %d\n", numPrimos);
@@ -113,3 +128,6 @@ void buscaSerial(int altura, int largura) {
     }
 }
 
+void buscaParalela() {
+    
+}
