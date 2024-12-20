@@ -4,8 +4,8 @@
 #include <time.h>
 #include <pthread.h>
 
-#define LARGURA 10000
-#define ALTURA 10000
+#define LARGURA 500
+#define ALTURA 500
 
 
 int **matriz;
@@ -16,11 +16,11 @@ int ehPrimo(int n);
 void mallocMatriz(int altura, int largura);
 void freeMatriz(int altura);
 
+
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
     mallocMatriz(ALTURA, LARGURA);
-    int num_rando = 0 + rand() % (31999 - 0 + 1);
     
     freeMatriz(matriz);
     
@@ -56,8 +56,9 @@ void mallocMatriz(int altura, int largura) {
     }
 
     for (i = 0; i < altura; i++) {
-        for (j = 0; j < largura: j++) {
+        for (j = 0; j < largura; j++) {
             matriz[i][j] = 0 + rand() % (31999 - 0 + 1);
+            printf("var = %d\n", matriz[i][j]);
         }   
     }
 }
