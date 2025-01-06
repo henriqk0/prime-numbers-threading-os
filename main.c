@@ -15,27 +15,26 @@ int numPrimos = 0;
 pthread_mutex_t qtdPrimosMutex;
 pthread_mutex_t macroblocoMutex;
 
-// add -lm if gcc
+// add -lm if gcc (math.h)
 
 int ehPrimo(int n);
 void mallocMatriz(int altura, int largura);
 void freeMatriz(int altura);
 
 void buscaSerial(int altura, int largura);
-void buscaParalela();
+void* buscaParalela();
 
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
-    mallocMatriz(ALTURA, LARGURA);
     clock_t timer;
 
     int opcao;
-    printf("Digite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\n");
-
-  
+    printf("Digite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\nOutro caractere - sair\n");
     scanf(" %d", &opcao);
-    if (opcao <= 2 && opcao > 0) {
+
+    while (opcao <= 2 && opcao > 0) {
+        mallocMatriz(ALTURA, LARGURA);
         timer = clock();
       
         if (opcao == 1) buscaSerial(ALTURA, LARGURA); 
@@ -47,23 +46,24 @@ int main(int argc, char *argv[]) {
             
             int i;
             for (i = 0; i < NUMTHREADS; i++) {
-                pthread_create(threads[i], NULL, buscaParalela());
+                pthread_create(&threads[i], NULL, buscaParalela(), NULL);
+                pthread_join(threads[i], NULL);
             }
 
-            
             pthread_mutex_destroy(&macroblocoMutex);
             pthread_mutex_destroy(&qtdPrimosMutex);
         };
+
         timer = clock() - timer;
         printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
         printf("Quantidade de primos na matriz: %d\n", numPrimos);
 
+        freeMatriz(ALTURA);
+        numPrimos = 0;
+
+        printf("\n\n\nDigite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\nOutro caractere - sair\n");
+        scanf(" %d", &opcao);   
     }
-    else { 
-        printf("Opcão inválida.\n");
-        return 1;
-    }
-    freeMatriz(ALTURA);
     
     return 0;
 }
@@ -111,8 +111,10 @@ void freeMatriz(int altura) {
     int i;
     for (i = 0; i < altura; i++){
         free(matriz[i]);
+        matriz[i] = NULL;
     }
     free(matriz);
+    matriz = NULL;
 }
 
 
@@ -128,6 +130,7 @@ void buscaSerial(int altura, int largura) {
     }
 }
 
-void buscaParalela() {
-    
+
+void* buscaParalela() {
+    pthread_exit(0);    
 }
