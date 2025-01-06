@@ -18,11 +18,11 @@ pthread_mutex_t macroblocoMutex;
 // add -lm if gcc (math.h)
 
 int ehPrimo(int n);
-void mallocMatriz(int altura, int largura);
-void freeMatriz(int altura);
+int **mallocMatriz(int altura, int largura);
+int **freeMatriz(int altura, int largura);
 
 void buscaSerial(int altura, int largura);
-void* buscaParalela();
+void *buscaParalela();
 
 int main(int argc, char *argv[]) {
     srand(time(NULL));
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     scanf(" %d", &opcao);
 
     while (opcao <= 2 && opcao > 0) {
-        mallocMatriz(ALTURA, LARGURA);
+        matriz = mallocMatriz(ALTURA, LARGURA);
         timer = clock();
       
         if (opcao == 1) buscaSerial(ALTURA, LARGURA); 
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
         printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
         printf("Quantidade de primos na matriz: %d\n", numPrimos);
 
-        freeMatriz(ALTURA);
+        matriz = freeMatriz(ALTURA, LARGURA);
         numPrimos = 0;
 
         printf("\n\n\nDigite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\nOutro caractere - sair\n");
@@ -83,19 +83,24 @@ int ehPrimo(int n) {
 }
 
 
-void mallocMatriz(int altura, int largura) {
+int **mallocMatriz(int altura, int largura) {
+    if (altura < 1 || largura < 1) {
+        printf("ERRO. Parametro invalido\n");
+        return (NULL);
+    }
+
     matriz = (int **)malloc( altura * sizeof(int *) );
     if (matriz == NULL) {
-        printf("ERRO. Não foi possível alocar memória na matriz\n");
-        exit(1);   
+        printf("ERRO. Memoria insuficiente\n");
+        return (NULL); 
     }
     
     int i, j;
     for (int i = 0; i < altura; i++) {
-        matriz[i] = (int *)malloc(largura * sizeof(int)); // invalid write size of 8 (?)
+        matriz[i] = (int *)malloc(largura * sizeof(int));
         if (matriz[i] == NULL) {
-            printf("ERRO. Não foi possível alocar memória para a linha %d da matriz\n", i);
-            exit(1);   
+            printf("ERRO. Memoria insuficiente para a linha %d da matriz\n", i);
+            return (NULL); 
         }
     }
 
@@ -104,17 +109,26 @@ void mallocMatriz(int altura, int largura) {
             matriz[i][j] = 0 + rand() % (31999 - 0 + 1);
         }   
     }
+
+    return matriz;
 }
 
 
-void freeMatriz(int altura) {
+int **freeMatriz(int altura, int largura) {
+    if (matriz == NULL) return (NULL);
+
+    if (altura < 1 || largura < 1) {
+        printf("ERRO. Parametro invalido\n");
+        return matriz;
+    }
+
     int i;
     for (i = 0; i < altura; i++){
         free(matriz[i]);
-        matriz[i] = NULL;
+        matriz[i] = NULL; // null for the lines
     }
-    free(matriz);
-    matriz = NULL;
+    free(matriz);   // free matrix 
+    return (NULL);  // return matrix
 }
 
 
@@ -131,6 +145,7 @@ void buscaSerial(int altura, int largura) {
 }
 
 
-void* buscaParalela() {
+void *buscaParalela() {
+
     pthread_exit(0);    
 }
