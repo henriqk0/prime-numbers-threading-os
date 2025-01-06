@@ -43,7 +43,7 @@ int proxMacrobloco = 0;
 pthread_mutex_t numPrimosMutex;
 pthread_mutex_t macroblocoMutex;
 
-// add -lm if gcc (math.h)
+// add -lm -luv if gcc (-lm to math.h and -luv to uv.h)
 
 int ehPrimo(int n);
 int **mallocMatriz(int altura, int largura);
