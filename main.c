@@ -1,18 +1,46 @@
+/* Uncomment below if WINDOWS + VS 2022 */
+
+// #pragma once
+// #define _CRT_SECURE_NO_WARNINGS 1
+// #define _WINSOCK_DEPRECATED_NO_WARNINGS 1
+// #pragma comment(lib,"pthreadVC2.lib")
+// #define HAVE_STRUCT_TIMESPEC
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <pthread.h>
-
+#include <uv.h>
 
 #define LARGURA 10000
 #define ALTURA 10000
+
+/*
+    (language of this comment: pt_br)
+    UTILIZE TAMANHOS DE LARGURA (COLUNAS) E ALTURA (LINHAS) DE MACROBLOCOS 
+    QUE DIVIDAM INTEGRALMENTE A MATRIZ (OS MACROBLOCOS SÃO IGUAIS E DEVEM ESTAR 
+    INSERIDOS NA MATRIZ, SEM SOBRAR ELEMENTOS NALGUM MACROBLOCO OU NA MATRIZ). 
+*/
+#define MACROB_LARGURA 100
+#define MACROB_ALTURA 10
+#define NUM_MACROB_LARGURA (LARGURA / MACROB_LARGURA)
+#define NUM_MACROB_ALTURA (ALTURA / MACROB_ALTURA)
+#define TOTAL_MACROBLOCOS (NUM_MACROB_ALTURA * NUM_MACROB_LARGURA)
+
+#define MACROB_X(num_macro) ((num_macro) / NUM_MACROB_ALTURA)
+#define MACROB_Y(num_macro) ((num_macro) % NUM_MACROB_ALTURA)
+
+#define MACROB_X_TO_GLOBAL_X(num_macro, local_x) (MACROB_X(num_macro) * MACROB_LARGURA + (local_x))
+#define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_ALTURA + (local_y)) 
+
 #define NUMTHREADS 8
 
 
 int **matriz;
 int numPrimos = 0; 
-pthread_mutex_t qtdPrimosMutex;
+int proxMacrobloco = 0;
+pthread_mutex_t numPrimosMutex;
 pthread_mutex_t macroblocoMutex;
 
 // add -lm if gcc (math.h)
@@ -25,9 +53,11 @@ void buscaSerial(int altura, int largura);
 void *buscaParalela();
 
 int main(int argc, char *argv[]) {
-    srand(time(NULL));
+    // srand(time(NULL));
 
-    clock_t timer;
+    // clock_t timer;
+
+    uint64_t comeco, fim;
 
     int opcao;
     printf("Digite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\nOutro caractere - sair\n");
@@ -35,31 +65,49 @@ int main(int argc, char *argv[]) {
 
     while (opcao <= 2 && opcao > 0) {
         matriz = mallocMatriz(ALTURA, LARGURA);
-        timer = clock();
+        // timer = clock();
       
-        if (opcao == 1) buscaSerial(ALTURA, LARGURA); 
+        if (opcao == 1) { 
+            // timer = clock();
+            comeco = uv_hrtime();
+            buscaSerial(ALTURA, LARGURA);
+        }
         else if (opcao == 2) {
-            printf("\nInciando busca paralela com %d threads...\n", NUMTHREADS);
+            printf("\nIniciando busca paralela com %d threads...\n", NUMTHREADS);
             
             pthread_t threads[NUMTHREADS];
+            // mutexes to critical regions
             pthread_mutex_init(&macroblocoMutex, NULL);
+            pthread_mutex_init(&numPrimosMutex, NULL);
+
+            // timer = clock();
+            comeco = uv_hrtime();
             
             int i;
             for (i = 0; i < NUMTHREADS; i++) {
-                pthread_create(&threads[i], NULL, buscaParalela(), NULL);
+                pthread_create(&threads[i], NULL, buscaParalela, NULL);
+            }
+            // join outside create loop to take advantage of parallelism
+            for (i = 0; i < NUMTHREADS; i++) {
                 pthread_join(threads[i], NULL);
             }
-
+            
+            // destroy mutexes after all
             pthread_mutex_destroy(&macroblocoMutex);
-            pthread_mutex_destroy(&qtdPrimosMutex);
+            pthread_mutex_destroy(&numPrimosMutex);
         };
 
-        timer = clock() - timer;
-        printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
+        // timer = clock() - timer;
+        fim = uv_hrtime();
+        double tempoExec = (fim - comeco) / 1e9;
+        // printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
+        printf("Código executado em  : %.3f segundos\n", tempoExec);
         printf("Quantidade de primos na matriz: %d\n", numPrimos);
 
+        // restore variables to next iteration
         matriz = freeMatriz(ALTURA, LARGURA);
         numPrimos = 0;
+        proxMacrobloco = 0;
 
         printf("\n\n\nDigite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\nOutro caractere - sair\n");
         scanf(" %d", &opcao);   
@@ -146,6 +194,35 @@ void buscaSerial(int altura, int largura) {
 
 
 void *buscaParalela() {
+    int numPrimosLocal = 0;
+
+    for (int proxMacroblocoLocal = 0; proxMacroblocoLocal < TOTAL_MACROBLOCOS; ) {
+        // critical region (proxMacrobloco, etc.)
+        pthread_mutex_lock(&macroblocoMutex);
+        if (proxMacrobloco >= TOTAL_MACROBLOCOS) {
+            pthread_mutex_unlock(&macroblocoMutex);
+            break;
+        }
+        proxMacroblocoLocal = proxMacrobloco;
+        ++proxMacrobloco;                           // update global var 
+        pthread_mutex_unlock(&macroblocoMutex);
+
+        // search for primeNumbers (inside 'macrobloco') outside critical region
+        int matrizX, matrizY;
+        for (int i = 0; i < MACROB_ALTURA; i++) {
+            for (int j = 0; j < MACROB_LARGURA; j++) {
+                matrizX = MACROB_X_TO_GLOBAL_X(proxMacroblocoLocal, i);
+                matrizY = MACROB_Y_TO_GLOBAL_Y(proxMacroblocoLocal, j);
+
+                if (ehPrimo(matriz[matrizX][matrizY]) == 1) numPrimosLocal += 1;
+            }
+        }
+    }
+
+    // critical region (global primeNumbers counter)
+    pthread_mutex_lock(&numPrimosMutex);
+    numPrimos += numPrimosLocal;
+    pthread_mutex_unlock(&numPrimosMutex);
 
     pthread_exit(0);    
 }
