@@ -24,17 +24,22 @@
 */
 #define MACROB_LARGURA 100
 #define MACROB_ALTURA 10
-#define NUM_MACROB_LARGURA (LARGURA / MACROB_LARGURA)
-#define NUM_MACROB_ALTURA (ALTURA / MACROB_ALTURA)
-#define TOTAL_MACROBLOCOS (NUM_MACROB_ALTURA * NUM_MACROB_LARGURA)
+#define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
+#define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
+#define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
 
-#define MACROB_X(num_macro) ((num_macro) / NUM_MACROB_ALTURA)
-#define MACROB_Y(num_macro) ((num_macro) % NUM_MACROB_ALTURA)
-
+#define MACROB_X(num_macro) ((num_macro) / NUM_MACROBLOCOS_ALTURA)
+#define MACROB_Y(num_macro) ((num_macro) % NUM_MACROBLOCOS_ALTURA)
+/*  obtains the coords (x, y) (think in small matrix, like 4x4 divided by 2x2; we have 4 macroblocks (0, 1, 2, 3)) 
+    like:   (the operations (integer div and mod) give distinct results, used with NUM_MACROBLOCOS_ALTURA in order to obtain a order like bellow)
+    0   1           -> pick the 1, e.g.: 1 / 2 => 0 and 1 % 2 => 1; 2 / 2 => 1 and 2 % 2 = 0 (...)
+    2   3   (location of all 'macroblocos' inside matrix, each containing 4 elements) 
+    This directive can converts the coords of a 'macrobloco' to the cords of the real matrix, by adding x or y with the multiplying of their inverse (x * mblockcolumns, y * mblockheight, like bellow)
+*/
 #define MACROB_X_TO_GLOBAL_X(num_macro, local_x) (MACROB_X(num_macro) * MACROB_LARGURA + (local_x))
 #define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_ALTURA + (local_y)) 
 
-#define NUMTHREADS 8
+#define NUMTHREADS 4
 
 
 int **matriz;
