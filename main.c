@@ -22,7 +22,7 @@
     QUE DIVIDAM INTEGRALMENTE A MATRIZ (OS MACROBLOCOS SÃO IGUAIS E DEVEM ESTAR 
     INSERIDOS NA MATRIZ, SEM SOBRAR ELEMENTOS NALGUM MACROBLOCO OU NA MATRIZ). 
 */
-#define MACROB_LARGURA 100
+#define MACROB_LARGURA 10
 #define MACROB_ALTURA 10
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
@@ -39,7 +39,7 @@
 #define MACROB_X_TO_GLOBAL_X(num_macro, local_x) (MACROB_X(num_macro) * MACROB_LARGURA + (local_x))
 #define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_ALTURA + (local_y)) 
 
-#define NUMTHREADS 4
+#define NUMTHREADS 6
 
 
 int **matriz;
@@ -65,10 +65,10 @@ int main(int argc, char *argv[]) {
     uint64_t comeco, fim;
 
     int opcao;
-    printf("Digite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\nOutro caractere - sair\n");
+    printf("\nDigite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\n3 - opcao 1 seguida da opcao 2\nOutro caractere - sair\n");
     scanf(" %d", &opcao);
 
-    while (opcao <= 2 && opcao > 0) {
+    while (opcao <= 3 && opcao > 0) {
         matriz = mallocMatriz(ALTURA, LARGURA);
         // timer = clock();
       
@@ -77,7 +77,28 @@ int main(int argc, char *argv[]) {
             comeco = uv_hrtime();
             buscaSerial(ALTURA, LARGURA);
         }
-        else if (opcao == 2) {
+        else if (opcao == 2 || opcao == 3) {
+
+            if (opcao == 3) {
+                // clock_t timerSerial;
+                // timerSerial = clock();
+                uint64_t comecoSerial, fimSerial;
+                comecoSerial = uv_hrtime();
+
+                buscaSerial(ALTURA, LARGURA);
+                
+                // timerSerial = clock() - timerSerial;
+                // printf("Código serial executado em  : %.3f segundos\n", ((double)timerSerial) / (CLOCKS_PER_SEC));
+
+                fimSerial = uv_hrtime();
+                double tempoExecSerial = (fimSerial - comecoSerial) / 1e9;
+                printf("Código serial executado em  : %.3f segundos\n", tempoExecSerial);
+
+                printf("Quantidade de primos na matriz: %d\n", numPrimos);
+                
+                // restore primeNum conter to parallel search
+                numPrimos = 0;
+            }
             printf("\nIniciando busca paralela com %d threads...\n", NUMTHREADS);
             
             pthread_t threads[NUMTHREADS];
@@ -101,20 +122,26 @@ int main(int argc, char *argv[]) {
             pthread_mutex_destroy(&macroblocoMutex);
             pthread_mutex_destroy(&numPrimosMutex);
         };
-
+        
         // timer = clock() - timer;
         fim = uv_hrtime();
         double tempoExec = (fim - comeco) / 1e9;
         // printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
-        printf("Código executado em  : %.3f segundos\n", tempoExec);
-        printf("Quantidade de primos na matriz: %d\n", numPrimos);
-
+        if (opcao == 3) {
+            printf("Código paralelo executado em  : %.3f segundos\n", tempoExec);
+            printf("Quantidade de primos na matriz: %d\n", numPrimos);
+        }
+        else {
+            printf("Código executado em  : %.3f segundos\n", tempoExec);
+            printf("Quantidade de primos na matriz: %d\n", numPrimos);
+        }
         // restore variables to next iteration
         matriz = freeMatriz(ALTURA, LARGURA);
         numPrimos = 0;
         proxMacrobloco = 0;
 
-        printf("\n\n\nDigite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\nOutro caractere - sair\n");
+        printf("\n=============================================================\n");
+        printf("Digite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\n3 - opcao 1 seguida da opcao 2\nOutro caractere - sair\n");
         scanf(" %d", &opcao);   
     }
     
