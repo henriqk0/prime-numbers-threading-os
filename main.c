@@ -159,7 +159,7 @@ int ehPrimo(int n) {
 
     if (n <= 1) return 0;
 
-    raizInteira = (int)(round(sqrt(n))); // AKS?
+    raizInteira = (int)(round(sqrt(n))); // change to other method (?)
     for (i = 2; i <= raizInteira; i++) {
         if (n % i == 0) return 0;
     }
