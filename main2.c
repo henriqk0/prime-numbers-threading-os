@@ -1,17 +1,19 @@
 /* Uncomment below if WINDOWS + VS 2022 */
-
+/*
 #pragma once
 #define _CRT_SECURE_NO_WARNINGS 1
 #define _WINSOCK_DEPRECATED_NO_WARNINGS 1
 #pragma comment(lib,"pthreadVC2.lib")
 #define HAVE_STRUCT_TIMESPEC
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <pthread.h>
-// #include <uv.h>
+
+#include <uv.h>
 
 #define LARGURA 10000
 #define ALTURA 10000
@@ -59,10 +61,11 @@ void* buscaParalela();
 
 int main(int argc, char* argv[]) {
     srand(time(NULL));
+  
+    // clock_t timer, timerSerial;
 
-    clock_t timer, timerSerial;
-
-    // uint64_t comeco, fim;
+    uint64_t comeco, fim;
+    double tempoExecSerial;
 
     int opcao;
     printf("\nDigite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\n3 - opcao 1 seguida da opcao 2\nOutro caractere - sair\n");
@@ -70,28 +73,30 @@ int main(int argc, char* argv[]) {
 
     while (opcao <= 3 && opcao > 0) {
         matriz = mallocMatriz(ALTURA, LARGURA);
-        timer = clock();
+        //timer = clock();
 
         if (opcao == 1) {
-             timer = clock();
-            // comeco = uv_hrtime();
+            // timer = clock();
+            comeco = uv_hrtime();
             buscaSerial(ALTURA, LARGURA);
         }
         else if (opcao == 2 || opcao == 3) {
 
             if (opcao == 3) {
-                timerSerial = clock();
-                // uint64_t comecoSerial, fimSerial;
-                // comecoSerial = uv_hrtime();
+                //timerSerial = clock();
+                uint64_t comecoSerial, fimSerial;
+                comecoSerial = uv_hrtime();
 
                 buscaSerial(ALTURA, LARGURA);
 
+                /*
                 timerSerial = clock() - timerSerial;
                 printf("Código serial executado em  : %.3f segundos\n", ((double)timerSerial) / (CLOCKS_PER_SEC));
+                */
 
-                // fimSerial = uv_hrtime();
-                // double tempoExecSerial = (fimSerial - comecoSerial) / 1e9;
-                // printf("Código serial executado em  : %.3f segundos\n", tempoExecSerial);
+                fimSerial = uv_hrtime();
+                tempoExecSerial = (fimSerial - comecoSerial) / 1e9;
+                printf("Código serial executado em  : %.3f segundos\n", tempoExecSerial);
 
                 printf("Quantidade de primos na matriz: %d\n", numPrimos);
 
@@ -105,8 +110,8 @@ int main(int argc, char* argv[]) {
             pthread_mutex_init(&macroblocoMutex, NULL);
             pthread_mutex_init(&numPrimosMutex, NULL);
 
-            timer = clock();
-            // comeco = uv_hrtime();
+            //timer = clock();
+            comeco = uv_hrtime();
 
             int i;
             for (i = 0; i < NUMTHREADS; i++) {
@@ -122,19 +127,17 @@ int main(int argc, char* argv[]) {
             pthread_mutex_destroy(&numPrimosMutex);
         };
 
-        timer = clock() - timer;
-        // fim = uv_hrtime();
-        // double tempoExec = (fim - comeco) / 1e9;
+        //timer = clock() - timer;
 
-        printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
+        fim = uv_hrtime();
+        double tempoExec = (fim - comeco) / 1e9;
+        printf("Código executado em  : %.3f segundos\n", tempoExec);
+
+        //printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
+        printf("Quantidade de primos na matriz: %d\n", numPrimos);
         if (opcao == 3) {
-            // printf("Código paralelo executado em  : %.3f segundos\n", tempoExec);
-            printf("Quantidade de primos na matriz: %d\n", numPrimos);
-            printf("Speedup: %.2f\n", (((double)timerSerial) / (CLOCKS_PER_SEC)) / (((double)timer) / (CLOCKS_PER_SEC)));
-        }
-        else {
-            // printf("Código executado em  : %.3f segundos\n", tempoExec);
-            printf("Quantidade de primos na matriz: %d\n", numPrimos);
+            //printf("Speedup: %.3f\n", (((double)timerSerial) / (CLOCKS_PER_SEC)) / (((double)timer) / (CLOCKS_PER_SEC)));
+            printf("Speedup: %.3f\n", (tempoExecSerial / tempoExec));
         }
         // restore variables to next iteration
         matriz = freeMatriz(ALTURA, LARGURA);
