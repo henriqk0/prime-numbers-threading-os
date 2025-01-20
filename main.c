@@ -24,8 +24,8 @@
     QUE DIVIDAM INTEGRALMENTE A MATRIZ (OS MACROBLOCOS SÃO IGUAIS E DEVEM ESTAR
     INSERIDOS NA MATRIZ, SEM SOBRAR ELEMENTOS NALGUM MACROBLOCO OU NA MATRIZ).
 */
-#define MACROB_LARGURA 10
-#define MACROB_ALTURA 10
+#define MACROB_LARGURA 10000
+#define MACROB_ALTURA 250 // macrob_largura != macrob_largura => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
@@ -41,7 +41,7 @@
 #define MACROB_X_TO_GLOBAL_X(num_macro, local_x) (MACROB_X(num_macro) * MACROB_LARGURA + (local_x))
 #define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_ALTURA + (local_y)) 
 
-#define NUMTHREADS 6
+#define NUMTHREADS 8
 
 
 int** matriz;
@@ -50,7 +50,7 @@ int proxMacrobloco = 0;
 pthread_mutex_t numPrimosMutex;
 pthread_mutex_t macroblocoMutex;
 
-// add -lm -luv if gcc (-lm to math.h and -luv to uv.h)
+// add -lm -luv if gcc (-lm to math.h and -luv to uv.h (needs install libuv))
 
 int ehPrimo(int n);
 int** mallocMatriz(int altura, int largura);
