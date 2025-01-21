@@ -24,13 +24,13 @@
     QUE DIVIDAM INTEGRALMENTE A MATRIZ (OS MACROBLOCOS SÃO IGUAIS E DEVEM ESTAR
     INSERIDOS NA MATRIZ, SEM SOBRAR ELEMENTOS NALGUM MACROBLOCO OU NA MATRIZ).
 */
-#define MACROB_LARGURA 5000
+#define MACROB_LARGURA 2500
 #define MACROB_ALTURA 2500 // macrob_largura != macrob_largura => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
 
-#define MACROB_X(num_macro) ((num_macro) / NUM_MACROBLOCOS_LARGURA)
+#define MACROB_X(num_macro) ((num_macro) / NUM_MACROBLOCOS_ALTURA)
 #define MACROB_Y(num_macro) ((num_macro) % NUM_MACROBLOCOS_ALTURA)
 /*  obtains the coords (x, y) (think in small matrix, like 4x4 divided by 2x2; we have 4 macroblocks (0, 1, 2, 3))
     like:   (the operations (integer div and mod) give distinct results, used with NUM_MACROBLOCOS_ALTURA in order to obtain a order like bellow)
@@ -39,8 +39,7 @@
     This directive can converts the coords of a 'macrobloco' to the cords of the real matrix, by adding x or y with the multiplying of their inverse (x * mblockcolumns, y * mblockheight, like bellow)
 */
 #define MACROB_X_TO_GLOBAL_X(num_macro, local_x) (MACROB_X(num_macro) * MACROB_LARGURA + (local_x))
-#define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_LARGURA + (local_y)) 
-
+#define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_ALTURA + (local_y)) 
 #define NUMTHREADS 8
 
 
