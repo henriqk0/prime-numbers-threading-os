@@ -22,10 +22,12 @@
     (language of this comment: pt_br)
     UTILIZE TAMANHOS DE LARGURA (COLUNAS) E ALTURA (LINHAS) DE MACROBLOCOS
     QUE DIVIDAM INTEGRALMENTE A MATRIZ (OS MACROBLOCOS SÃO IGUAIS E DEVEM ESTAR
-    INSERIDOS NA MATRIZ, SEM SOBRAR ELEMENTOS NALGUM MACROBLOCO OU NA MATRIZ).
+    INSERIDOS NA MATRIZ, SEM SOBRAR ELEMENTOS NALGUM MACROBLOCO OU NA MATRIZ). 
+    PARA OBTER OS VERDADEIROS RESULTADOS EXECUTANDO EM PARALELO, USAR SOMENTE
+    MACROBLOCOS QUADRADOS.
 */
-#define MACROB_LARGURA 2500
-#define MACROB_ALTURA 2500 // macrob_largura != macrob_largura => primeNumbersSerial != primeNumbersParallel
+#define MACROB_LARGURA 1000
+#define MACROB_ALTURA 1000 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
@@ -250,16 +252,7 @@ void* buscaParalela() {
                 matrizX = MACROB_X_TO_GLOBAL_X(proxMacroblocoLocal, i);
                 matrizY = MACROB_Y_TO_GLOBAL_Y(proxMacroblocoLocal, j);
 
-                if (matrizX >= LARGURA || matrizY >= ALTURA) {
-
-                    printf("Fora dos limites da matriz!(i: %d, j: %d) X: %d, Y: %d no macrobloco %d com MACROX = %d E MACROY = %d\n", i, j, matrizX, matrizY, proxMacroblocoLocal, MACROB_X(proxMacroblocoLocal), MACROB_Y(proxMacroblocoLocal));
-                    if (proxMacroblocoLocal == 3 )
-                        printf("%d num altura\n", NUM_MACROBLOCOS_ALTURA);
-
-                } else {
-                    if (ehPrimo(matriz[matrizX][matrizY]) == 1) numPrimosLocal += 1;
-                }
-                // if (ehPrimo(matriz[matrizX][matrizY]) == 1) numPrimosLocal += 1;
+                if (ehPrimo(matriz[matrizX][matrizY]) == 1) numPrimosLocal += 1;
             }
         }
     }
