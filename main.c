@@ -25,6 +25,18 @@
     INSERIDOS NA MATRIZ, SEM SOBRAR ELEMENTOS NALGUM MACROBLOCO OU NA MATRIZ). 
     PARA OBTER OS VERDADEIROS RESULTADOS EXECUTANDO EM PARALELO, USAR SOMENTE
     MACROBLOCOS E MATRIZES QUADRADOS.
+
+    EM LINUX, FOI UTILIZADO A BIBLIOTECA LIBUV, QUE EXIGE INSTALAÇÃO EXTERNA, QUE
+    É RELATIVAMENTE COMPLICADA EM WINDOWS. BASTA COMENTAR O INCLUDE DE UV.H E AS
+    VARIÁVEIS DE TIPO uint64_t E A VARIÁVEL tempoExecSerial, UTILIZANDO APENAS A
+    BIBLIOTECA TIME APÓS DESCOMENTAR OS TRECHOS QUE MANIPULAM AS VARIÁVEIS DE TIPO
+    clock_t. 
+
+    A BIBLIOTECA LIBUV É UTILIZADA EM NODE.JS, ENTÃO É POSSÍVEL QUE JÁ ESTEJA
+    INSTALADA, CASO POSSUA NODE LOCALMENTE. POR PROVIDENCIAS I/O ASSÍNCRONO BASEADO
+    EM LAÇOS DE EVENTOS, ACABA POR TER UMA MÉTRICA DE TEMPORIZAÇÃO, EM LINUX, QUE
+    ESCAPA DA AGREGAÇÃO DE TEMPO DAS MÚLTIPLAS THREADS, COMO OCORRE COM A BIBLIOTECA
+    time.h EM LINUX.
 */
 
 #define MACROB_LARGURA 1000
@@ -41,8 +53,8 @@
     2   3   (location of all 'macroblocos' inside matrix, each containing 4 elements)
     This directive can converts the coords of a 'macrobloco' to the cords of the real matrix, by adding x or y with the multiplying of their inverse (x * mblockcolumns, y * mblockheight, like bellow)
 */
-#define MACROB_X_TO_GLOBAL_X(num_macro, local_x) (MACROB_X(num_macro) * MACROB_LARGURA + (local_x))
-#define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_ALTURA + (local_y)) 
+#define MACROB_X_TO_GLOBAL_X(num_macro, local_x) (MACROB_X(num_macro) * MACROB_ALTURA + (local_x))
+#define MACROB_Y_TO_GLOBAL_Y(num_macro, local_y) (MACROB_Y(num_macro) * MACROB_LARGURA + (local_y)) 
 #define NUMTHREADS 8
 
 
@@ -79,13 +91,16 @@ int main(int argc, char* argv[]) {
 
         if (opcao == 1) {
             // timer = clock();
+
             comeco = uv_hrtime();
+
             buscaSerial(ALTURA, LARGURA);
         }
         else if (opcao == 2 || opcao == 3) {
 
             if (opcao == 3) {
                 //timerSerial = clock();
+
                 uint64_t comecoSerial, fimSerial;
                 comecoSerial = uv_hrtime();
 
@@ -161,7 +176,7 @@ int ehPrimo(int n) {
 
     if (n <= 1) return 0;
 
-    raizInteira = (int)(round(sqrt(n))); // change to other method (?)
+    raizInteira = (int)(round(sqrt(n))); // we use this method
     for (i = 2; i <= raizInteira; i++) {
         if (n % i == 0) return 0;
     }
@@ -242,12 +257,11 @@ void* buscaParalela() {
             break;
         }
         proxMacroblocoLocal = proxMacrobloco;
-        ++proxMacrobloco;                           // update global var 
-        pthread_mutex_unlock(&macroblocoMutex);
+        ++proxMacrobloco;                           // update global var to other iterations 
+        pthread_mutex_unlock(&macroblocoMutex);     // unlock after it has been updated or all macroblocks have been analyzed
 
         // search for primeNumbers (inside 'macrobloco') outside critical region
         int matrizX, matrizY;
-        // printf("BLOCO %d MACRO_X = %d; GLOBAL X = %d\n", 7, MACROB_X(7), MACROB_X_TO_GLOBAL_X(, 10));
         for (int i = 0; i < MACROB_ALTURA; i++) {
             for (int j = 0; j < MACROB_LARGURA; j++) {
                 matrizX = MACROB_X_TO_GLOBAL_X(proxMacroblocoLocal, i);
