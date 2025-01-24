@@ -39,8 +39,8 @@
     time.h EM LINUX.
 */
 
-#define MACROB_LARGURA 1000
-#define MACROB_ALTURA 1000 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
+#define MACROB_LARGURA 250
+#define MACROB_ALTURA 250 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
@@ -56,7 +56,7 @@
 */
 #define LOOP_I_TO_GLOBAL_I(num_macrobloco, loop_i) (MULTIPLICADOR_I(num_macrobloco) * MACROB_ALTURA + (loop_i))
 #define LOOP_J_TO_GLOBAL_J(num_macrobloco, loop_j) (MULTIPLICADOR_J(num_macrobloco) * MACROB_LARGURA + (loop_j)) 
-#define NUMTHREADS 2 
+#define NUMTHREADS 8 
 
 
 int** matriz;
@@ -252,14 +252,15 @@ void* buscaParalela() {
 
     for (int proxMacroblocoLocal = 0; proxMacroblocoLocal < TOTAL_MACROBLOCOS; ) {
         // critical region (proxMacrobloco, etc.)
-        pthread_mutex_lock(&macroblocoMutex);
+
+        //pthread_mutex_lock(&macroblocoMutex);
         if (proxMacrobloco >= TOTAL_MACROBLOCOS) {
-            pthread_mutex_unlock(&macroblocoMutex);
+            // pthread_mutex_unlock(&macroblocoMutex);
             break;
         }
         proxMacroblocoLocal = proxMacrobloco;
         ++proxMacrobloco;                           // update global var to other iterations 
-        pthread_mutex_unlock(&macroblocoMutex);     // unlock after it has been updated or all macroblocks have been analyzed
+        //pthread_mutex_unlock(&macroblocoMutex);     // unlock after it has been updated or all macroblocks have been analyzed
 
         // search for primeNumbers (inside 'macrobloco') outside critical region
         int matrizX, matrizY;
@@ -274,9 +275,10 @@ void* buscaParalela() {
     }
 
     // critical region (global primeNumbers counter)
-    pthread_mutex_lock(&numPrimosMutex);
+
+    //pthread_mutex_lock(&numPrimosMutex);
     numPrimos += numPrimosLocal;
-    pthread_mutex_unlock(&numPrimosMutex);
+    //pthread_mutex_unlock(&numPrimosMutex);
 
     pthread_exit(0);
 }
