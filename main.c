@@ -1,11 +1,9 @@
-/* Uncomment below if WINDOWS + VS 2022 */
-/*
-#pragma once
-#define _CRT_SECURE_NO_WARNINGS 1
-#define _WINSOCK_DEPRECATED_NO_WARNINGS 1
-#pragma comment(lib,"pthreadVC2.lib")
-#define HAVE_STRUCT_TIMESPEC
-*/
+#if defined(_WIN32) || defined(_WIN64)
+    #define _CRT_SECURE_NO_WARNINGS 1
+    #define _WINSOCK_DEPRECATED_NO_WARNINGS 1
+    #pragma comment(lib,"pthreadVC2.lib")
+    #define HAVE_STRUCT_TIMESPEC
+#endif   
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +11,9 @@
 #include <time.h>
 #include <pthread.h>
 
-#include <uv.h>
+#if !defined( _WIN32) && !defined(_WIN64)
+    #include <uv.h>
+#endif
 
 #define LARGURA 10000
 #define ALTURA 10000
@@ -26,11 +26,12 @@
     PARA OBTER OS VERDADEIROS RESULTADOS EXECUTANDO EM PARALELO, USAR SOMENTE
     MACROBLOCOS E MATRIZES QUADRADOS.
 
-    EM LINUX, FOI UTILIZADO A BIBLIOTECA LIBUV, QUE EXIGE INSTALAÇÃO EXTERNA, QUE
-    É RELATIVAMENTE COMPLICADA EM WINDOWS. BASTA COMENTAR O INCLUDE DE UV.H E AS
-    VARIÁVEIS DE TIPO uint64_t E A VARIÁVEL tempoExecSerial, UTILIZANDO APENAS A
-    BIBLIOTECA TIME APÓS DESCOMENTAR OS TRECHOS QUE MANIPULAM AS VARIÁVEIS DE TIPO
-    clock_t. 
+    EM LINUX, FOI UTILIZADO A BIBLIOTECA LIBUV, QUE EXIGE INSTALAÇÃO EXTERNA, 
+    RELATIVAMENTE COMPLICADA EM WINDOWS — E POR ISTO OPTOU-SE PELAS DIRETIVAS DE
+    COMPILAÇÃO ACIMA, PARA UTILIZAR APENAS A BIBLIOTECA TIME PARA AS MEDIÇÕES
+    QUANDO ESTIVER EM WINDOWS. PARA INSTALAR ESSA BIBLIOTECA EM UBUNTU, POR
+    EXEMPLO, EXECUTE A SEGUINTE LINHA DE COMANDO NO TERMINAL: 
+        sudo apt install libuv1-dev
 
     A BIBLIOTECA LIBUV É UTILIZADA EM NODE.JS, ENTÃO É POSSÍVEL QUE JÁ ESTEJA
     INSTALADA, CASO POSSUA NODE LOCALMENTE. ELA PROVIDENCIA I/O ASSÍNCRONO BASEADO
@@ -41,13 +42,13 @@
     time.h EM LINUX.
 */
 
-#define MACROB_LARGURA 5
-#define MACROB_ALTURA 5 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
+#define MACROB_LARGURA 20
+#define MACROB_ALTURA 20 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
 
-#define MULTIPLICADOR_I(num_macrobloco) ((num_macrobloco) / NUM_MACROBLOCOS_ALTURA)
+#define MULTIPLICADOR_I(num_macrobloco) ((num_macrobloco) / NUM_MACROBLOCOS_ALTURA) // no difference using NUM_MACROBLOCOS_ALTURA or NUM_MACROBLOCOS_LARGURA in square blocks and matrix
 #define MULTIPLICADOR_J(num_macrobloco) ((num_macrobloco) % NUM_MACROBLOCOS_ALTURA)
 /*  obtains the coords (x, y) (think in small matrix, like 4x4 divided by 2x2; we have 4 macroblocks (0, 1, 2, 3))
     like:   (the operations (integer div and mod) give distinct results, used with NUM_MACROBLOCOS_ALTURA in order to obtain a order like bellow)
@@ -58,7 +59,7 @@
 */
 #define LOOP_I_TO_GLOBAL_I(num_macrobloco, loop_i) (MULTIPLICADOR_I(num_macrobloco) * MACROB_ALTURA + (loop_i))
 #define LOOP_J_TO_GLOBAL_J(num_macrobloco, loop_j) (MULTIPLICADOR_J(num_macrobloco) * MACROB_LARGURA + (loop_j)) 
-#define NUMTHREADS 2 
+#define NUMTHREADS 8
 
 
 int** matriz;
@@ -79,44 +80,48 @@ void* buscaParalela();
 int main(int argc, char* argv[]) {
     srand(time(NULL));
   
-    // clock_t timer, timerSerial;
-
-    uint64_t comeco, fim;
-    double tempoExecSerial;
-
+    #if !defined( _WIN32) || !defined(_WIN64)
+        uint64_t comeco, fim;
+        double tempoExecSerial;
+    #else
+        clock_t timer, timerSerial;
+    #endif
+    
     int opcao;
     printf("\nDigite:\n1 - busca serial\n2 - busca paralela com o numero de threads definido no código\n3 - opcao 1 seguida da opcao 2\nOutro número inteiro - sair\n");
     scanf(" %d", &opcao);
 
     while (opcao <= 3 && opcao > 0) {
         matriz = mallocMatriz(ALTURA, LARGURA);
-        //timer = clock();
 
         if (opcao == 1) {
-            // timer = clock();
-
-            comeco = uv_hrtime();
+            #if !defined(_WIN32) && !defined(_WIN64)
+                comeco = uv_hrtime();
+            #else
+                timer = clock();
+            #endif
 
             buscaSerial(ALTURA, LARGURA);
         }
         else if (opcao == 2 || opcao == 3) {
 
             if (opcao == 3) {
-                //timerSerial = clock();
+                #if !defined(_WIN32) && !defined(_WIN64)
+                    uint64_t comecoSerial, fimSerial;
 
-                uint64_t comecoSerial, fimSerial;
-                comecoSerial = uv_hrtime();
+                    comecoSerial = uv_hrtime();
+                    buscaSerial(ALTURA, LARGURA);
+                    fimSerial = uv_hrtime();
+                    tempoExecSerial = (fimSerial - comecoSerial) / 1e9;
 
-                buscaSerial(ALTURA, LARGURA);
+                    printf("Código serial executado em  : %.3f segundos\n", tempoExecSerial);
+                #else
+                    timerSerial = clock();
+                    buscaSerial(ALTURA, LARGURA);
+                    timerSerial = clock() - timerSerial;
 
-                /*
-                timerSerial = clock() - timerSerial;
-                printf("Código serial executado em  : %.3f segundos\n", ((double)timerSerial) / (CLOCKS_PER_SEC));
-                */
-
-                fimSerial = uv_hrtime();
-                tempoExecSerial = (fimSerial - comecoSerial) / 1e9;
-                printf("Código serial executado em  : %.3f segundos\n", tempoExecSerial);
+                    printf("Código serial executado em  : %.3f segundos\n", ((double)timerSerial) / (CLOCKS_PER_SEC));
+                #endif
 
                 printf("Quantidade de primos na matriz: %d\n", numPrimos);
 
@@ -130,8 +135,11 @@ int main(int argc, char* argv[]) {
             pthread_mutex_init(&macroblocoMutex, NULL);
             pthread_mutex_init(&numPrimosMutex, NULL);
 
-            //timer = clock();
-            comeco = uv_hrtime();
+            #if !defined(_WIN32) && !defined(_WIN64)
+                comeco = uv_hrtime();
+            #else
+                timer = clock();
+            #endif
 
             int i;
             for (i = 0; i < NUMTHREADS; i++) {
@@ -147,17 +155,22 @@ int main(int argc, char* argv[]) {
             pthread_mutex_destroy(&numPrimosMutex);
         };
 
-        //timer = clock() - timer;
+        #if !defined(_WIN32) && !defined(_WIN64)
+            fim = uv_hrtime();
+            double tempoExec = (fim - comeco) / 1e9;
+            printf("Código executado em  : %.3f segundos\n", tempoExec);
+        #else
+            timer = clock() - timer;
+            //printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
+        #endif
 
-        fim = uv_hrtime();
-        double tempoExec = (fim - comeco) / 1e9;
-        printf("Código executado em  : %.3f segundos\n", tempoExec);
-
-        //printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
         printf("Quantidade de primos na matriz: %d\n", numPrimos);
         if (opcao == 3) {
-            //printf("Speedup: %.3f\n", (((double)timerSerial) / (CLOCKS_PER_SEC)) / (((double)timer) / (CLOCKS_PER_SEC)));
-            printf("Speedup: %.3f\n", (tempoExecSerial / tempoExec));
+            #if !defined(_WIN32) && !defined(_WIN64)
+                printf("Speedup: %.3f\n", (tempoExecSerial / tempoExec));
+            #else
+                printf("Speedup: %.3f\n", (((double)timerSerial) / (CLOCKS_PER_SEC)) / (((double)timer) / (CLOCKS_PER_SEC)));
+            #endif
         }
         // restore variables to next iteration
         matriz = freeMatriz(ALTURA, LARGURA);
