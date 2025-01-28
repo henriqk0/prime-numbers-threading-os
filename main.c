@@ -11,10 +11,6 @@
 #include <time.h>
 #include <pthread.h>
 
-#if !defined( _WIN32) && !defined(_WIN64)
-    #include <uv.h>
-#endif
-
 #define LARGURA 10000
 #define ALTURA 10000
 
@@ -161,7 +157,7 @@ int main(int argc, char* argv[]) {
             printf("Código executado em  : %.3f segundos\n", tempoExec);
         #else
             timer = clock() - timer;
-            //printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
+            printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
         #endif
 
         printf("Quantidade de primos na matriz: %d\n", numPrimos);
