@@ -11,6 +11,10 @@
 #include <time.h>
 #include <pthread.h>
 
+#if !defined(_WIN32) && !defined(_WIN64)
+    #include <uv.h>
+#endif
+ 
 #define LARGURA 10000
 #define ALTURA 10000
 
@@ -38,8 +42,8 @@
     time.h EM LINUX.
 */
 
-#define MACROB_LARGURA 20
-#define MACROB_ALTURA 20 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
+#define MACROB_LARGURA 4
+#define MACROB_ALTURA 4 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
@@ -157,7 +161,7 @@ int main(int argc, char* argv[]) {
             printf("Código executado em  : %.3f segundos\n", tempoExec);
         #else
             timer = clock() - timer;
-            printf("Código executado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
+            printf("Código exe e ecutado em  : %.3f segundos\n", ((double)timer) / (CLOCKS_PER_SEC));
         #endif
 
         printf("Quantidade de primos na matriz: %d\n", numPrimos);
