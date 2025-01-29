@@ -56,6 +56,15 @@
     2   3   (location of all 'macroblocos' inside matrix, each containing 4 elements)
     This directive can converts the coords of a macroblock to the cords of the real matrix, by adding i or j with its
     horizontal or vertical multiplier multiplied by the horizontal or vertical dimension of the macroblock, respectively  
+
+    This works because the integer divisor of each identifier, starting at 0, of macroblocks that are on the same 
+    horizontal, will cause the macroblock multiplier on the horizontal axis to remain the same, since the last macroblock 
+    on this axis will be a value that, if incremented and divided by that integer divisor, results in a value 1 unit higher; 
+    while the rest of the integer division of this macroblock representative will cause the multipliers of the macroblock 
+    columns to change from 0 (which marks the start of a new horizontal occupied by macroblocks, since the result is 
+    obtained in an integer division), varying by 1, to the number of macroblocks per macroblock vertical subtracted by 1, 
+    which, if incremented again, would return to the first column. 
+
 */
 #define LOOP_I_TO_GLOBAL_I(num_macrobloco, loop_i) (MULTIPLICADOR_I(num_macrobloco) * MACROB_ALTURA + (loop_i))
 #define LOOP_J_TO_GLOBAL_J(num_macrobloco, loop_j) (MULTIPLICADOR_J(num_macrobloco) * MACROB_LARGURA + (loop_j)) 
