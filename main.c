@@ -63,8 +63,12 @@
     while the rest of the integer division of this macroblock representative will cause the multipliers of the macroblock 
     columns to change from 0 (which marks the start of a new horizontal occupied by macroblocks, since the result is 
     obtained in an integer division), varying by 1, to the number of macroblocks per macroblock vertical subtracted by 1, 
-    which, if incremented again, would return to the first column. 
-
+    which, if incremented again, would return to the first column. With the multiplier in hand, simply multiply it by 
+    the number of columns and rows, respectively, to obtain the position of the element that is at that index in another 
+    macroblock. As in macroblock 1 in the example given, where the first element of its first row and first column will 
+    be aij such that i is the same and j is real, with the multiplier incremented by 1 with respect to macroblock 0, it
+     is multiplied by the vertical dimension of the macroblock to obtain the start of the macroblock, as if it were 
+     “shifted” to the right.
 */
 #define LOOP_I_TO_GLOBAL_I(num_macrobloco, loop_i) (MULTIPLICADOR_I(num_macrobloco) * MACROB_ALTURA + (loop_i))
 #define LOOP_J_TO_GLOBAL_J(num_macrobloco, loop_j) (MULTIPLICADOR_J(num_macrobloco) * MACROB_LARGURA + (loop_j)) 
