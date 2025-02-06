@@ -42,34 +42,14 @@
     time.h EM LINUX.
 */
 
-#define MACROB_LARGURA 4
-#define MACROB_ALTURA 4 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
+#define MACROB_LARGURA 10
+#define MACROB_ALTURA 10 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
 
-#define MULTIPLICADOR_I(num_macrobloco) ((num_macrobloco) / NUM_MACROBLOCOS_ALTURA) // no difference using NUM_MACROBLOCOS_ALTURA or NUM_MACROBLOCOS_LARGURA in square blocks and matrix
+#define MULTIPLICADOR_I(num_macrobloco) ((num_macrobloco) / NUM_MACROBLOCOS_ALTURA) // indiferente NUM_MACROBLOCOS_ALTURA ou NUM_MACROBLOCOS_LARGURA em blocos e matrizes quadradas 
 #define MULTIPLICADOR_J(num_macrobloco) ((num_macrobloco) % NUM_MACROBLOCOS_ALTURA)
-/*  obtains the coords (x, y) (think in small matrix, like 4x4 divided by 2x2; we have 4 macroblocks (0, 1, 2, 3))
-    like:   (the operations (integer div and mod) give distinct results, used with NUM_MACROBLOCOS_ALTURA in order to obtain a order like bellow)
-    0   1           -> pick the 1, e.g.: 1 / 2 => 0 and 1 % 2 => 1; 2 / 2 => 1 and 2 % 2 = 0 (...)
-    2   3   (location of all 'macroblocos' inside matrix, each containing 4 elements)
-    This directive can converts the coords of a macroblock to the cords of the real matrix, by adding i or j with its
-    horizontal or vertical multiplier multiplied by the horizontal or vertical dimension of the macroblock, respectively  
-
-    This works because the integer divisor of each identifier, starting at 0, of macroblocks that are on the same 
-    horizontal, will cause the macroblock multiplier on the horizontal axis to remain the same, since the last macroblock 
-    on this axis will be a value that, if incremented and divided by that integer divisor, results in a value 1 unit higher; 
-    while the rest of the integer division of this macroblock representative will cause the multipliers of the macroblock 
-    columns to change from 0 (which marks the start of a new horizontal occupied by macroblocks, since the result is 
-    obtained in an integer division), varying by 1, to the number of macroblocks per macroblock vertical subtracted by 1, 
-    which, if incremented again, would return to the first column. With the multiplier in hand, simply multiply it by 
-    the number of columns and rows, respectively, to obtain the position of the element that is at that index in another 
-    macroblock. As in macroblock 1 in the example given, where the first element of its first row and first column will 
-    be aij such that i is the same and j is real, with the multiplier incremented by 1 with respect to macroblock 0, it
-     is multiplied by the vertical dimension of the macroblock to obtain the start of the macroblock, as if it were 
-     “shifted” to the right.
-*/
 #define LOOP_I_TO_GLOBAL_I(num_macrobloco, loop_i) (MULTIPLICADOR_I(num_macrobloco) * MACROB_ALTURA + (loop_i))
 #define LOOP_J_TO_GLOBAL_J(num_macrobloco, loop_j) (MULTIPLICADOR_J(num_macrobloco) * MACROB_LARGURA + (loop_j)) 
 #define NUMTHREADS 8
@@ -84,14 +64,14 @@ pthread_mutex_t macroblocoMutex;
 // add -lm -luv if gcc (-lm to math.h and -luv to uv.h (needs install libuv))
 
 int ehPrimo(int n);
-int** mallocMatriz(int altura, int largura);
-int** freeMatriz(int altura, int largura);
+int** mallocMatriz();
+int** freeMatriz();
 
-void buscaSerial(int altura, int largura);
+void buscaSerial();
 void* buscaParalela();
 
 int main(int argc, char* argv[]) {
-    srand(time(NULL));
+    srand(55);
   
     #if !defined( _WIN32) || !defined(_WIN64)
         uint64_t comeco, fim;
@@ -105,7 +85,7 @@ int main(int argc, char* argv[]) {
     scanf(" %d", &opcao);
 
     while (opcao <= 3 && opcao > 0) {
-        matriz = mallocMatriz(ALTURA, LARGURA);
+        matriz = mallocMatriz();
 
         if (opcao == 1) {
             #if !defined(_WIN32) && !defined(_WIN64)
@@ -114,7 +94,7 @@ int main(int argc, char* argv[]) {
                 timer = clock();
             #endif
 
-            buscaSerial(ALTURA, LARGURA);
+            buscaSerial();
         }
         else if (opcao == 2 || opcao == 3) {
 
@@ -123,14 +103,14 @@ int main(int argc, char* argv[]) {
                     uint64_t comecoSerial, fimSerial;
 
                     comecoSerial = uv_hrtime();
-                    buscaSerial(ALTURA, LARGURA);
+                    buscaSerial();
                     fimSerial = uv_hrtime();
                     tempoExecSerial = (fimSerial - comecoSerial) / 1e9;
 
                     printf("Código serial executado em  : %.3f segundos\n", tempoExecSerial);
                 #else
                     timerSerial = clock();
-                    buscaSerial(ALTURA, LARGURA);
+                    buscaSerial();
                     timerSerial = clock() - timerSerial;
 
                     printf("Código serial executado em  : %.3f segundos\n", ((double)timerSerial) / (CLOCKS_PER_SEC));
@@ -186,7 +166,7 @@ int main(int argc, char* argv[]) {
             #endif
         }
         // restore variables to next iteration
-        matriz = freeMatriz(ALTURA, LARGURA);
+        matriz = freeMatriz();
         numPrimos = 0;
         proxMacrobloco = 0;
 
@@ -201,7 +181,6 @@ int main(int argc, char* argv[]) {
 
 int ehPrimo(int n) {
     int raizInteira, i;
-    double raiz;
 
     if (n <= 1) return 0;
 
@@ -213,29 +192,29 @@ int ehPrimo(int n) {
 }
 
 
-int** mallocMatriz(int altura, int largura) {
-    if (altura < 1 || largura < 1) {
+int** mallocMatriz() {
+    if (ALTURA < 1 || LARGURA < 1) {
         printf("ERRO. Parametro invalido\n");
         return (NULL);
     }
 
-    matriz = (int**)malloc(altura * sizeof(int*));
+    matriz = (int**)malloc(ALTURA * sizeof(int*));
     if (matriz == NULL) {
         printf("ERRO. Memoria insuficiente\n");
         return (NULL);
     }
 
     int i, j;
-    for (int i = 0; i < altura; i++) {
-        matriz[i] = (int*)malloc(largura * sizeof(int));
+    for (int i = 0; i < ALTURA; i++) {
+        matriz[i] = (int*)malloc(LARGURA * sizeof(int));
         if (matriz[i] == NULL) {
             printf("ERRO. Memoria insuficiente para a linha %d da matriz\n", i);
             return (NULL);
         }
     }
 
-    for (i = 0; i < altura; i++) {
-        for (j = 0; j < largura; j++) {
+    for (i = 0; i < ALTURA; i++) {
+        for (j = 0; j < LARGURA; j++) {
             matriz[i][j] = 0 + rand() % (31999 - 0 + 1);
         }
     }
@@ -244,16 +223,16 @@ int** mallocMatriz(int altura, int largura) {
 }
 
 
-int** freeMatriz(int altura, int largura) {
+int** freeMatriz() {
     if (matriz == NULL) return (NULL);
 
-    if (altura < 1 || largura < 1) {
+    if (ALTURA < 1 || LARGURA < 1) {
         printf("ERRO. Parametro invalido\n");
         return matriz;
     }
 
     int i;
-    for (i = 0; i < altura; i++) {
+    for (i = 0; i < ALTURA; i++) {
         free(matriz[i]);
         matriz[i] = NULL; // null for the lines
     }
@@ -262,13 +241,13 @@ int** freeMatriz(int altura, int largura) {
 }
 
 
-void buscaSerial(int altura, int largura) {
+void buscaSerial() {
     int i, j;
 
     printf("\nIniciando buscaSerial...\n");
 
-    for (i = 0; i < altura; i++) {
-        for (j = 0; j < largura; j++) {
+    for (i = 0; i < ALTURA; i++) {
+        for (j = 0; j < LARGURA; j++) {
             if (ehPrimo(matriz[i][j]) == 1) numPrimos += 1;
         }
     }
@@ -307,4 +286,6 @@ void* buscaParalela() {
     pthread_mutex_unlock(&numPrimosMutex);
 
     pthread_exit(0);
+    
+    return (NULL);
 }
