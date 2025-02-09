@@ -42,8 +42,8 @@
     time.h EM LINUX.
 */
 
-#define MACROB_LARGURA 10
-#define MACROB_ALTURA 10 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
+#define MACROB_LARGURA 100
+#define MACROB_ALTURA 100 // != MACROB_LARGURA => primeNumbersSerial != primeNumbersParallel
 #define NUM_MACROBLOCOS_LARGURA (LARGURA / MACROB_LARGURA)
 #define NUM_MACROBLOCOS_ALTURA (ALTURA / MACROB_ALTURA)
 #define TOTAL_MACROBLOCOS (NUM_MACROBLOCOS_ALTURA * NUM_MACROBLOCOS_LARGURA)
@@ -52,8 +52,7 @@
 #define MULTIPLICADOR_J(num_macrobloco) ((num_macrobloco) % NUM_MACROBLOCOS_ALTURA)
 #define LOOP_I_TO_GLOBAL_I(num_macrobloco, loop_i) (MULTIPLICADOR_I(num_macrobloco) * MACROB_ALTURA + (loop_i))
 #define LOOP_J_TO_GLOBAL_J(num_macrobloco, loop_j) (MULTIPLICADOR_J(num_macrobloco) * MACROB_LARGURA + (loop_j)) 
-#define NUMTHREADS 8
-
+#define NUMTHREADS 12
 
 int** matriz;
 int numPrimos = 0;
@@ -123,7 +122,8 @@ int main(int argc, char* argv[]) {
             }
             printf("\nIniciando busca paralela com %d threads...\n", NUMTHREADS);
 
-            pthread_t threads[NUMTHREADS];
+            pthread_t threads[NUMTHREADS]; /* theread id */
+            pthread_attr_t attr[NUMTHREADS];         /* thread attrs */
             // mutexes to critical regions
             pthread_mutex_init(&macroblocoMutex, NULL);
             pthread_mutex_init(&numPrimosMutex, NULL);
@@ -135,8 +135,13 @@ int main(int argc, char* argv[]) {
             #endif
 
             int i;
+
             for (i = 0; i < NUMTHREADS; i++) {
-                pthread_create(&threads[i], NULL, buscaParalela, NULL);
+                pthread_attr_init(&attr[i]);
+            }
+            // create outside attr_init to take advantage of parallelism, not serializing they w/ create
+            for (i = 0; i < NUMTHREADS; i++) {
+                pthread_create(&threads[i], &attr[i], buscaParalela, argv[1]);
             }
             // join outside create loop to take advantage of parallelism
             for (i = 0; i < NUMTHREADS; i++) {
@@ -286,6 +291,4 @@ void* buscaParalela() {
     pthread_mutex_unlock(&numPrimosMutex);
 
     pthread_exit(0);
-    
-    return (NULL);
 }
